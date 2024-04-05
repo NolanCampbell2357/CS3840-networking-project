@@ -1,6 +1,7 @@
 package src;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 import src.Card.SUIT;
@@ -8,40 +9,35 @@ import src.Card.VALUE;
 
 public class Deck {
 
-  private Card[] cards;
-  private int currentPosition = 0;
+  private ArrayList<Card> cards;
 
   public Deck() {
+    generate();
+  }
 
-    cards = new Card[52];
+  public void generate() {
+    makeCards();
+    shuffle();
+  }
 
-    int i = 0;
+  public void makeCards() {
+    cards = new ArrayList<Card>();
+
     for (SUIT suit : SUIT.values()) {
       for (VALUE value : VALUE.values()) {
-        cards[i++] = new Card(value, suit);
+        cards.add(new Card(value, suit));
       }
     }
   }
 
   public void shuffle() {
-    Random rn = new Random();
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < cards.length; j++) {
-        Card temp = cards[i];
-
-        int rand = rn.nextInt(cards.length);
-
-        cards[i] = cards[rand];
-        cards[rand] = temp;
-      }
-    }
-    currentPosition = 0;
+    Collections.shuffle(cards, new Random());
   }
 
-  public Card nextCard() {
-    if (currentPosition > 51) {
+  public Card draw() {
+    if (cards.size() == 0) {
       return null;
     }
-    return cards[currentPosition];
+    return cards.remove(0);
   }
 }
