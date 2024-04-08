@@ -16,7 +16,7 @@ public class Hand {
   }
 
   public String toString() {
-    String output = "Value: " + calculateHand() + "\n" + "Hand:\n";
+    String output = "Value: " + calculateHand() + "\n" + "Cards:\n";
 
     for (Card card : cards) {
       output += card.toString() + "\n";
@@ -45,5 +45,9 @@ public class Hand {
 
   public Card getCard(int idx) {
     return cards.get(idx);
+  }
+
+  public void clear() {
+    cards.clear();
   }
 }

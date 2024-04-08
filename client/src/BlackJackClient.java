@@ -10,7 +10,7 @@ public class BlackJackClient {
 
   public static void main(String[] args) {
 
-    System.out.println("Attemping to connect to host " +
+    System.out.println("Attempting to connect to host " +
         SERVER_HOSTNAME + " on port " + PORT_NUMBER);
 
     try (
@@ -23,14 +23,20 @@ public class BlackJackClient {
 
       String userInput;
 
-      System.out.print("input: ");
-      while ((userInput = stdIn.readLine()) != null) {
-        out.println(userInput);
-        if (userInput.equals("Done")) {// if it is "Done", close current connection
-          break;
+      while (true) {
+        String response = in.readLine();
+
+        if (response.equals("request")) {
+          System.out.print("input: ");
+          while ((userInput = stdIn.readLine()) != null) {
+            out.println(userInput);
+           System.out.println(userInput);
+            break;
+          }
+          continue;
+        } else {
+          System.out.println(response);
         }
-        System.out.println("echo: " + in.readLine());
-        System.out.print("input: ");
       }
     } catch (UnknownHostException e) {
       System.err.println("Host " + SERVER_HOSTNAME + " unknown");
@@ -39,5 +45,7 @@ public class BlackJackClient {
       System.err.println("Could not get I/O from " + SERVER_HOSTNAME);
       System.exit(1);
     }
+
+    System.out.println("Client end");
   }
 }

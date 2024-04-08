@@ -43,6 +43,6 @@ public class Card {
   }
 
   public String toString() {
-    return "[Card] Value: " + value + " Suit: " + suit;
+    return "[" + value + " of " + suit + "] (" + value.intValue + ")";
   }
 }

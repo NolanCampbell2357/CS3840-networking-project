@@ -18,6 +18,6 @@ public class Player {
   }
 
   public String toString() {
-    return "Your Hand:\n" + hand.toString();
+    return "Hand:\n" + hand.toString();
   }
 }
