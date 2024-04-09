@@ -1,8 +1,4 @@
 package src;
-
-import java.security.PublicKey;
-import java.util.ArrayList;
-
 public class Card {
   public enum SUIT {
     HEARTS,
@@ -12,7 +8,6 @@ public class Card {
   }
 
   public enum VALUE {
-    ONE(1),
     TWO(2),
     THREE(3),
     FOUR(4),

@@ -44,6 +44,7 @@ public class GameThread extends Thread {
         player.result = "";
         player.state = STATE.WAITING;
         player.clearHand();
+        dealer.hand.clear();
       }
 
       // Setup round
@@ -57,7 +58,7 @@ public class GameThread extends Thread {
         if (player == null)
           continue;
         player.externalMessage = "Dealer's first card is " + dealer.hand.getCard(0).toString()
-            + ", the second card is face-down.";
+            + ", the second card is face-down.\n";
       }
 
       // Give each player two cards

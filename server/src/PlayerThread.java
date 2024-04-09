@@ -52,10 +52,10 @@ public class PlayerThread extends Thread {
       while (state == STATE.QUEUED)
         ;
 
-      out.println("Added to table spot " + spot);
+      out.println("Added to table spot " + spot + "\n");
 
       while (true) {
-        out.println("Starting round, dealing cards");
+        out.println("Starting round, dealing cards\n");
         while (state == STATE.WAITING)
           ;
 
@@ -112,7 +112,7 @@ public class PlayerThread extends Thread {
           } else {
             boolean connectionDead = false;
             while (true) {
-              out.println("Would you like to:\nhit (1)\nor\nstand (2)");
+              out.println("Would you like to:\n    hit (1)\nor\n    stand (2)");
               out.println("request");
 
               if ((input = clientStream.read()) != -1) {

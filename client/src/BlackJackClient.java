@@ -30,7 +30,6 @@ public class BlackJackClient {
           System.out.print("input: ");
           while ((userInput = stdIn.readLine()) != null) {
             out.println(userInput);
-           System.out.println(userInput);
             break;
           }
           continue;

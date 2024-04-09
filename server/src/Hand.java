@@ -16,10 +16,10 @@ public class Hand {
   }
 
   public String toString() {
-    String output = "Value: " + calculateHand() + "\n" + "Cards:\n";
+    String output = "    Value: " + calculateHand() + "\n    " + "Cards:\n";
 
     for (Card card : cards) {
-      output += card.toString() + "\n";
+      output += "        "+card.toString() + "\n";
     }
     return output;
   }
