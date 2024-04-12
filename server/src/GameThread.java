@@ -20,7 +20,7 @@ public class GameThread extends Thread {
         if (nextPlayer.isAlive()) {
           System.out.println("Switch state");
           nextPlayer.spot = openSpot + 1;
-          nextPlayer.state = STATE.WAITING;
+          nextPlayer.setState(STATE.WAITING);
           BlackJackServer.players[openSpot] = nextPlayer;
         }
       }
@@ -42,7 +42,7 @@ public class GameThread extends Thread {
         player.dealerValue = -1;
         player.externalMessage = null;
         player.result = "";
-        player.state = STATE.WAITING;
+        player.setState(STATE.WAITING);
         player.clearHand();
         dealer.hand.clear();
       }
@@ -65,9 +65,13 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.state = STATE.DEALING;
-        while (player.state == STATE.DEALING)
+        player.setState(STATE.DEALING);
+        System.out.println("Dealing a player");
+        while (player.getSTATE() == STATE.DEALING) {
+          System.out.println("dealing");
+        }
           ;
+          System.out.println("Finished dealing");
         player.externalMessage = null;
       }
 
@@ -90,7 +94,7 @@ public class GameThread extends Thread {
           if (player == null)
           continue;
           player.externalMessage = resultMessage;
-          player.state = STATE.RESULT;
+          player.setState(STATE.RESULT);
         }
         while (!playersWaiting())
           ;
@@ -101,18 +105,18 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.state = STATE.WAITING_FOR_TURN;
+        player.setState(STATE.WAITING_FOR_TURN);
       }
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.state = STATE.TURN;
+        player.setState(STATE.TURN);
         for (PlayerThread messagePlayer : BlackJackServer.players) {
           if (messagePlayer == null)
             continue;
           messagePlayer.externalMessage = "Player " + player.spot + " is taking their turn";
         }
-        while (player.state == STATE.TURN) {
+        while (player.getSTATE() == STATE.TURN) {
           if (!player.isAlive()) {
             break;
           }
@@ -135,7 +139,7 @@ public class GameThread extends Thread {
           continue;
         player.dealerValue = dealer.hand.calculateHand();
         player.dealerHand = "Dealer's " + dealer.toString();
-        player.state = STATE.EVAL_RESULT;
+        player.setState(STATE.EVAL_RESULT);
       }
       while (!playersWaiting())
         ;
@@ -149,7 +153,7 @@ public class GameThread extends Thread {
         if (player == null)
           continue;
         player.externalMessage = resultMessage;
-        player.state = STATE.RESULT;
+        player.setState(STATE.RESULT);
       }
       while (!playersWaiting())
         ;
@@ -160,7 +164,7 @@ public class GameThread extends Thread {
     for (PlayerThread player : BlackJackServer.players) {
       if (player == null)
         continue;
-      if (player.state != STATE.WAITING)
+      if (player.getSTATE() != STATE.WAITING)
         return false;
     }
     return true;

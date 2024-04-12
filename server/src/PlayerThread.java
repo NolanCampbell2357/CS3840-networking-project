@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class PlayerThread extends Thread {
 
@@ -22,7 +23,8 @@ public class PlayerThread extends Thread {
 
   private Socket clientSocket;
   private Player player;
-  public STATE state = STATE.QUEUED;
+  private STATE state = STATE.QUEUED;
+  private AtomicReference<STATE> atomicState = new AtomicReference<STATE>(state);
 
   public int spot;
   public String externalMessage = null;
@@ -46,32 +48,36 @@ public class PlayerThread extends Thread {
         InputStream clientStream = clientSocket.getInputStream();
         BufferedReader in = new BufferedReader(new InputStreamReader(clientStream))) {
 
-      if (state == STATE.QUEUED) {
+      if (getSTATE() == STATE.QUEUED) {
         out.println("Connected to table, please wait...");
       }
-      while (state == STATE.QUEUED)
+      while (getSTATE() == STATE.QUEUED)
         ;
 
       out.println("Added to table spot " + spot + "\n");
 
       while (true) {
         out.println("Starting round, dealing cards\n");
-        while (state == STATE.WAITING)
+        while (getSTATE() == STATE.WAITING) {
+         // System.out.println("Waiting before deal " + state);
+        }
           ;
 
           out.println(externalMessage);
           
-        if (state == STATE.DEALING) {
+        if (getSTATE() == STATE.DEALING) {
           player.hand.takeCard(BlackJackServer.deck);
           player.hand.takeCard(BlackJackServer.deck);
           out.println("Your " + player);
         }
 
-        state = STATE.WAITING;
-        while (state == STATE.WAITING)
+        setState(STATE.WAITING);
+        while (getSTATE() == STATE.WAITING) {
+         // out.println("WAITING " + getSTATE());
+        }
           ;
 
-        if (state == STATE.DEALER_BLACKJACK) {
+        if (getSTATE() == STATE.DEALER_BLACKJACK) {
           out.println("Dealer has BlackJack, here's the hand: ");
           out.println(externalMessage);
 
@@ -82,18 +88,18 @@ public class PlayerThread extends Thread {
             out.println("Dealer beats you, you LOSE!");
             result = "LOSS";
           }
-          state = STATE.WAITING;
+          setState(STATE.WAITING);
 
-          while (state == STATE.WAITING)
+          while (getSTATE() == STATE.WAITING)
             ;
-          if (state == STATE.RESULT) {
+          if (getSTATE() == STATE.RESULT) {
             out.println(externalMessage);
-            state = STATE.WAITING;
+            setState(STATE.WAITING);
           }
           continue;
         }
 
-        while (state == STATE.WAITING_FOR_TURN || externalMessage != null) {
+        while (getSTATE() == STATE.WAITING_FOR_TURN || externalMessage != null) {
           if (externalMessage != null) {
             out.println(externalMessage);
             externalMessage = null;
@@ -103,7 +109,7 @@ public class PlayerThread extends Thread {
         String inputLine;
         int input;
 
-        if (state == STATE.TURN) {
+        if (getSTATE() == STATE.TURN) {
           out.println("Your Turn!");
 
           if (player.hasBlackjack()) {
@@ -153,17 +159,17 @@ public class PlayerThread extends Thread {
               result = "STOOD";
             }
           }
-          state = STATE.WAITING_FOR_TURN;
+          setState(STATE.WAITING_FOR_TURN);
         }
 
-        while (state == STATE.WAITING_FOR_TURN) {
+        while (getSTATE() == STATE.WAITING_FOR_TURN) {
           if (externalMessage != null) {
             out.println(externalMessage);
             externalMessage = null;
           }
         }
 
-        if (state == STATE.EVAL_RESULT) {
+        if (getSTATE() == STATE.EVAL_RESULT) {
           if (dealerValue > 21) {
             out.println(dealerHand);
             out.println("Dealer Busts, you WIN!");
@@ -181,9 +187,16 @@ public class PlayerThread extends Thread {
             result = "PUSH";
             out.println("You and the dealer tied, PUSH!");
           }
-          state = STATE.WAITING;
+          setState(STATE.WAITING);
         }
 
+        while (getSTATE() == STATE.WAITING)
+          //System.out.println("Waiting after eval result " + state);;
+        
+          if (getSTATE() == STATE.RESULT) {
+          out.println(externalMessage);
+          setState(STATE.WAITING);
+        }
       }
 
     } catch (IOException e) {
@@ -194,6 +207,14 @@ public class PlayerThread extends Thread {
 
   public void clearHand() {
     player.hand.clear();
+  }
+
+  public void setState(STATE state) {;
+    atomicState.set(state);
+  }
+
+  public STATE getSTATE() {
+    return atomicState.getAcquire();
   }
   
 }
