@@ -6,7 +6,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 public class PlayerThread extends Thread {
 
@@ -24,15 +26,14 @@ public class PlayerThread extends Thread {
   private Socket clientSocket;
   private Player player;
   private STATE state = STATE.QUEUED;
-  private AtomicReference<STATE> atomicState = new AtomicReference<STATE>(state);
 
   public int spot;
-  public String externalMessage = null;
 
-  public String result;
-
-  public int dealerValue = -1;
-  public String dealerHand = "";
+  private AtomicReference<STATE> atomicState = new AtomicReference<STATE>(state);
+  private AtomicReference<String> externalMessage = new AtomicReference<String>(null);
+  private AtomicReference<String> dealerHand = new AtomicReference<String>("");
+  private AtomicReference<String> result = new AtomicReference<String>();
+  private AtomicInteger dealerValue = new AtomicInteger(-1);
 
   public PlayerThread(Socket clientSocket, int playerId) {
     this.clientSocket = clientSocket;
@@ -51,20 +52,19 @@ public class PlayerThread extends Thread {
       if (getSTATE() == STATE.QUEUED) {
         out.println("Connected to table, please wait...");
       }
-      while (getSTATE() == STATE.QUEUED)
-        ;
+      while (getSTATE() == STATE.QUEUED) {
+      }
 
       out.println("Added to table spot " + spot + "\n");
 
       while (true) {
         out.println("Starting round, dealing cards\n");
         while (getSTATE() == STATE.WAITING) {
-         // System.out.println("Waiting before deal " + state);
+          // System.out.println("Waiting before deal " + state);
         }
-          ;
 
-          out.println(externalMessage);
-          
+        out.println(getExternalMessage());
+
         if (getSTATE() == STATE.DEALING) {
           player.hand.takeCard(BlackJackServer.deck);
           player.hand.takeCard(BlackJackServer.deck);
@@ -73,36 +73,34 @@ public class PlayerThread extends Thread {
 
         setState(STATE.WAITING);
         while (getSTATE() == STATE.WAITING) {
-         // out.println("WAITING " + getSTATE());
+          // out.println("WAITING " + getSTATE());
         }
-          ;
 
         if (getSTATE() == STATE.DEALER_BLACKJACK) {
           out.println("Dealer has BlackJack, here's the hand: ");
-          out.println(externalMessage);
+          out.println(getExternalMessage());
 
           if (player.hasBlackjack()) {
             out.println("Dealer and you both have BlackJack, PUSH!");
-            result = "PUSH";
+            setResult("PUSH");
           } else {
             out.println("Dealer beats you, you LOSE!");
-            result = "LOSS";
+            setResult("LOSS");
           }
           setState(STATE.WAITING);
 
           while (getSTATE() == STATE.WAITING)
             ;
           if (getSTATE() == STATE.RESULT) {
-            out.println(externalMessage);
+            out.println(externalMessage.getAndSet(null));
             setState(STATE.WAITING);
           }
           continue;
         }
 
-        while (getSTATE() == STATE.WAITING_FOR_TURN || externalMessage != null) {
-          if (externalMessage != null) {
-            out.println(externalMessage);
-            externalMessage = null;
+        while (getSTATE() == STATE.WAITING_FOR_TURN || getExternalMessage() != null) {
+          if (getExternalMessage() != null) {
+            out.println(externalMessage.getAndSet(null));
           }
         }
 
@@ -110,11 +108,11 @@ public class PlayerThread extends Thread {
         int input;
 
         if (getSTATE() == STATE.TURN) {
-          out.println("Your Turn!");
+          out.println("\nYour Turn!");
 
           if (player.hasBlackjack()) {
             out.println("You have BlackJack! Win!");
-            result = "WON";
+            setResult("WON");
           } else {
             boolean connectionDead = false;
             while (true) {
@@ -129,20 +127,20 @@ public class PlayerThread extends Thread {
                 try {
                   choice = Integer.valueOf(inputLine);
                 } catch (NumberFormatException e) {
-                  System.out.println("Bad choice from player " + player.id);
+                  System.out.println("\nBad choice from player " + player.id);
                 }
 
                 if (choice == 1) {
                   player.hand.takeCard(BlackJackServer.deck);
-                  out.println("You drew a card");
+                  out.println("\nYou drew a card");
                   out.println(player);
                   if (player.hand.calculateHand() > 20)
                     break;
                 } else if (choice == 2) {
-                  out.println("You chose to stand");
+                  out.println("\nYou chose to stand");
                   break;
                 } else {
-                  out.println("Invalid Choice");
+                  out.println("\nInvalid Choice");
                 }
               } else {
                 connectionDead = true;
@@ -153,48 +151,47 @@ public class PlayerThread extends Thread {
               return;
 
             if (player.hand.calculateHand() > 21) {
-              result = "BUST";
-              out.println("You have BUST!");
+              setResult("BUST");
+              out.println("You have BUST!\n");
             } else {
-              result = "STOOD";
+              setResult("STOOD");
             }
           }
           setState(STATE.WAITING_FOR_TURN);
         }
 
         while (getSTATE() == STATE.WAITING_FOR_TURN) {
-          if (externalMessage != null) {
-            out.println(externalMessage);
-            externalMessage = null;
+          if (getExternalMessage() != null) {
+            out.println(externalMessage.getAndSet(null));
           }
         }
 
         if (getSTATE() == STATE.EVAL_RESULT) {
-          if (dealerValue > 21) {
-            out.println(dealerHand);
-            out.println("Dealer Busts, you WIN!");
-            if (result == "STOOD") {
-              result = "WON";
+          if (getDealerValue() > 21) {
+            out.println(getDealerHand());
+            out.println("\nDealer Busts, you WIN!\n");
+            if (getResult() == "STOOD") {
+              setResult("WON");
             }
-          } else if (result != "STOOD") {
-          } else if (dealerValue > player.hand.calculateHand()) {
-            result = "LOSS";
-            out.println("You LOSE!");
-          } else if (dealerValue < player.hand.calculateHand()) {
-            result = "WON";
-            out.println("You Win");
+          } else if (getResult() != "STOOD") {
+          } else if (getDealerValue() > player.hand.calculateHand()) {
+            setResult("LOSS");
+            out.println("\nYou LOSE!\n");
+          } else if (getDealerValue() < player.hand.calculateHand()) {
+            setResult("WON");
+            out.println("\nYou Win\n");
           } else {
-            result = "PUSH";
-            out.println("You and the dealer tied, PUSH!");
+            setResult("PUSH");
+            out.println("\nYou and the dealer tied, PUSH!\n");
           }
           setState(STATE.WAITING);
         }
 
-        while (getSTATE() == STATE.WAITING)
-          //System.out.println("Waiting after eval result " + state);;
-        
-          if (getSTATE() == STATE.RESULT) {
-          out.println(externalMessage);
+        while (getSTATE() == STATE.WAITING) { // System.out.println("Waiting after eval result " + state);;
+        }
+
+        if (getSTATE() == STATE.RESULT) {
+          out.println(getExternalMessage());
           setState(STATE.WAITING);
         }
       }
@@ -209,12 +206,56 @@ public class PlayerThread extends Thread {
     player.hand.clear();
   }
 
-  public void setState(STATE state) {;
+  public void setState(STATE state) {
+    ;
     atomicState.set(state);
   }
 
   public STATE getSTATE() {
     return atomicState.getAcquire();
   }
-  
+
+  public void setExternalMessage(String message) {
+    externalMessage.set(message);
+  }
+
+  public void appendExternalMessageIfNotNull(String message) {
+    UnaryOperator<String> setIfNotNull = (v) -> {
+      if(v==null) {
+        return message;
+      } else {
+        return v+="\n"+message;
+      }
+    };
+   externalMessage.updateAndGet(setIfNotNull);
+  }
+
+  public String getExternalMessage() {
+    return externalMessage.get();
+  }
+
+  public void setDealerValue(int value) {
+    dealerValue.set(value);
+  }
+
+  public int getDealerValue() {
+    return dealerValue.get();
+  }
+
+  public void setDealerHand(String hand) {
+    dealerHand.set(hand);
+  }
+
+  public String getDealerHand() {
+    return dealerHand.get();
+  }
+
+  public void setResult(String str) {
+    result.set(str);
+  }
+
+  public String getResult() {
+    return result.get();
+  }
+
 }

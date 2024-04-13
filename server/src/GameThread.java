@@ -38,10 +38,10 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.dealerHand = "";
-        player.dealerValue = -1;
-        player.externalMessage = null;
-        player.result = "";
+        player.setDealerHand("");
+        player.setDealerValue(-1);
+        player.setExternalMessage(null);
+        player.setExternalMessage("");
         player.setState(STATE.WAITING);
         player.clearHand();
         dealer.hand.clear();
@@ -57,8 +57,8 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.externalMessage = "Dealer's first card is " + dealer.hand.getCard(0).toString()
-            + ", the second card is face-down.\n";
+        player.setExternalMessage("Dealer's first card is " + dealer.hand.getCard(0).toString()
+            + ", the second card is face-down.\n");
       }
 
       // Give each player two cards
@@ -72,15 +72,17 @@ public class GameThread extends Thread {
         }
           ;
           System.out.println("Finished dealing");
-        player.externalMessage = null;
+        player.setExternalMessage(null);
       }
 
       // Handle dealer has blackjack
       if (dealer.hasBlackjack()) {
+        System.out.println("DEALER HAS BLACKJACK");
         for (PlayerThread player : BlackJackServer.players) {
           if (player == null)
           continue;
-          player.externalMessage = dealer.hand.toString();
+          player.setExternalMessage(dealer.hand.toString());
+          player.setState(STATE.DEALER_BLACKJACK);
         }
         while (!playersWaiting())
           ;
@@ -88,12 +90,12 @@ public class GameThread extends Thread {
         for (PlayerThread player : BlackJackServer.players) {
           if (player == null)
           continue;
-          resultMessage = "player in spot " + player.spot + " finished with result: " + player.result;
+          resultMessage = "player in spot " + player.spot + " finished with result: " + player.getResult();
         }
         for (PlayerThread player : BlackJackServer.players) {
           if (player == null)
           continue;
-          player.externalMessage = resultMessage;
+          player.setExternalMessage(resultMessage);
           player.setState(STATE.RESULT);
         }
         while (!playersWaiting())
@@ -114,7 +116,7 @@ public class GameThread extends Thread {
         for (PlayerThread messagePlayer : BlackJackServer.players) {
           if (messagePlayer == null)
             continue;
-          messagePlayer.externalMessage = "Player " + player.spot + " is taking their turn";
+          messagePlayer.appendExternalMessageIfNotNull("Player " + player.spot + " is taking their turn");
         }
         while (player.getSTATE() == STATE.TURN) {
           if (!player.isAlive()) {
@@ -124,7 +126,7 @@ public class GameThread extends Thread {
         for (PlayerThread messagePlayer : BlackJackServer.players) {
           if (messagePlayer == null)
             continue;
-          messagePlayer.externalMessage = "Player " + player.spot + " finished their turn and " + player.result;
+          messagePlayer.appendExternalMessageIfNotNull("Player " + player.spot + " finished their turn and " + player.getResult());
         }
       }
 
@@ -137,8 +139,8 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.dealerValue = dealer.hand.calculateHand();
-        player.dealerHand = "Dealer's " + dealer.toString();
+        player.setDealerValue(dealer.hand.calculateHand());
+        player.setDealerHand("Dealer's " + dealer.toString());
         player.setState(STATE.EVAL_RESULT);
       }
       while (!playersWaiting())
@@ -147,12 +149,12 @@ public class GameThread extends Thread {
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        resultMessage += "player in spot " + player.spot + " finished with result: " + player.result + "\n";
+        resultMessage += "player in spot " + player.spot + " finished with result: " + player.getResult() + "\n";
       }
       for (PlayerThread player : BlackJackServer.players) {
         if (player == null)
           continue;
-        player.externalMessage = resultMessage;
+        player.setExternalMessage(resultMessage);
         player.setState(STATE.RESULT);
       }
       while (!playersWaiting())
