@@ -114,12 +114,18 @@ public class GameThread extends Thread {
           continue;
         player.setState(STATE.TURN);
         for (PlayerThread messagePlayer : BlackJackServer.players) {
-          if (messagePlayer == null)
+          if (messagePlayer == null || !player.isAlive())
             continue;
           messagePlayer.appendExternalMessageIfNotNull("Player " + player.spot + " is taking their turn");
         }
         while (player.getSTATE() == STATE.TURN) {
           if (!player.isAlive()) {
+            for (PlayerThread messagePlayer : BlackJackServer.players) {
+              if (messagePlayer == null)
+                continue;
+              messagePlayer.appendExternalMessageIfNotNull("Player " + player.spot + " disconnected");
+            }
+            System.out.println("Lost player");
             break;
           }
         }
@@ -127,6 +133,13 @@ public class GameThread extends Thread {
           if (messagePlayer == null)
             continue;
           messagePlayer.appendExternalMessageIfNotNull("Player " + player.spot + " finished their turn and " + player.getResult());
+        }
+      }
+
+      // Handle disconnects
+      for (int i = 0; i < BlackJackServer.players.length; i++) {
+        if(BlackJackServer.players[i] != null && !BlackJackServer.players[i].isAlive()) {
+          BlackJackServer.players[i] = null;
         }
       }
 
@@ -164,7 +177,7 @@ public class GameThread extends Thread {
 
   public boolean playersWaiting() {
     for (PlayerThread player : BlackJackServer.players) {
-      if (player == null)
+      if (player == null || !player.isAlive())
         continue;
       if (player.getSTATE() != STATE.WAITING)
         return false;
@@ -174,7 +187,7 @@ public class GameThread extends Thread {
 
   public int spotOpen() {
     for (int i = 0; i < BlackJackServer.players.length; i++) {
-      if (BlackJackServer.players[i] == null) {
+      if (BlackJackServer.players[i] == null || !BlackJackServer.players[i].isAlive()) {
         return i;
       }
     }

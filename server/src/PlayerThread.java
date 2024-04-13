@@ -58,7 +58,7 @@ public class PlayerThread extends Thread {
       out.println("Added to table spot " + spot + "\n");
 
       while (true) {
-        out.println("Starting round, dealing cards\n");
+        out.println("\nStarting round, dealing cards\n");
         while (getSTATE() == STATE.WAITING) {
           // System.out.println("Waiting before deal " + state);
         }
